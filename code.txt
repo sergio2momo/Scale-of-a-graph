@@ -1,0 +1,68 @@
+install.packages("sp")
+install.packages("maptools")
+install.packages("fpc")
+library(ade4)
+library(ggplot2)
+library(ggord)
+library(sp)
+library(maptools)
+library(fpc)
+library("fpc", lib.loc="~/R/win-library/3.5")
+setwd("C:/Users/Sergio/Documents/R nueva prueba")
+
+# matriz ambiental
+env_data <- read.table("environmental_data.txt",h=T, row.names = 1, dec=".")
+str(env_data)
+env<- env_data[,3:20]
+s_env <- cbind(log10(env[,1:9]+1),sqrt(env[,10:18]))
+s_env
+str(s_env)
+
+# matriz de invertebrados
+macro.1 <- read.table("invs.1.txt", h=T, sep="\t", row.names = 1)
+
+# matriz de rasgo
+traits.PNNC <- read.table ("traits.PNN.C.txt",sep="\t",h=T, row.names = 4)
+trait_block <- structure(c(4,6,6,5,5,4,4), 
+                         .Names = c("Respiration mode","Adapt. flow constrains","Body size","Feeding str.","Locomotion","Aqt. stages","Dispersal mode"))
+str(trait_block)
+summary(trait_block)
+
+traits <- traits.PNNC[,4:37]
+str(traits)
+
+# Función RLQ
+
+afcL.aravo <- dudi.coa(macro.1, scannf = FALSE, n=2)
+acpR.aravo <- dudi.hillsmith(s_env, row.w = afcL.aravo$lw,scannf = FALSE)
+acpQ.aravo <- dudi.pca(traits, row.w = afcL.aravo$cw,
+                       scannf = FALSE)
+rlq.aravo <- rlq(acpR.aravo, afcL.aravo, acpQ.aravo,
+                 scannf = FALSE, n=2)
+summary(rlq.aravo) 
+plot(rlq.aravo, col=colores) ##es hacer un plot con los ríos, variables ambientales y rasgos, es decir los plots que dicen: "R row scores", "RCanonical" y "Q Canonical"
+##############################
+?par
+
+
+##################################
+f<-(s.label(rlq.aravo$lR, add.plot=F, boxes=TRUE, xlim = c(-2,2),clabel = 0, cpoint = 1.5, pch=18))#ríos
+f1<-(s.arrow(rlq.aravo$l1, clab=1.5,add.plot = T, boxes= FALSE, sub="titulo",csub = 1.25,possub = "topleft"))
+
+s.label(rlq.aravo$co, add.plot=T, boxes= FALSE, add=TRUE,cgrid=100)#rasgos
+s.arrow(rlq.aravo$li, add.plot=T, xlim=c(-1,1), boxes = FALSE, add=TRUE)#variables ambientales
+s.label(rlq.aravo$co, add.plot=T, clab=1.5, boxes= FALSE,add=TRUE)#####
+s.label(rlq.aravo$co, clab=1.5, boxes= FALSE)
+s.label(rlq.aravo$lQ, add.plot=T, clabel = 0, boxes= FALSE)
+
+s.label(rlq.aravo$co, add.plot=T, clab=1.5, boxes= FALSE,add=TRUE)
+s.label(rlq.aravo$lQ, add.plot=T, clabel = 0, boxes= FALSE,add=TRUE)
+
+pointLabel(rlq.aravo$lQ,row.names(rlq.aravo$lQ), cex=0.7)
+macro.1
+
+## gráfica de variables ambientales y puntos son rasgos
+ggord(rlq.aravo$co, rlq.aravo$l1) ## no me convence porque los rasgos se proyectan como puntos
+
+p<-ggord(rlq.aravo$co, rlq.aravo$l1)
+s.label(rlq.aravo$co, add.plot=T, clab=1.5, boxes= FALSE,add=TRUE)
